@@ -39,9 +39,12 @@ pub fn include_licenses(root_path: &Path, gpl: bool) {
     }
 
     // Gather licenses with cargo about
-    cmd!(sh, "cargo install cargo-about --version 0.9.0 --locked")
-        .run()
-        .unwrap();
+    cmd!(
+        sh,
+        "cargo install cargo-about --version 0.9.0 --locked --features cli"
+    )
+    .run()
+    .unwrap();
     let licenses_template = afs::crate_dir("xtask").join("licenses_template.hbs");
     let licenses_content = cmd!(sh, "cargo about generate {licenses_template}")
         .read()
