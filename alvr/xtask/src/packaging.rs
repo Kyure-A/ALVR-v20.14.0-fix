@@ -39,18 +39,27 @@ pub fn include_licenses(root_path: &Path, gpl: bool) {
     }
 
     // Gather licenses with cargo about
+    let install_cargo_about = cmd!(sh, "cargo about --version")
+        .read()
+        .map(|version| !version.contains("0.9.0"))
+        .unwrap_or(true);
+    if install_cargo_about {
+        cmd!(
+            sh,
+            "cargo install cargo-about --version 0.9.0 --locked --features cli --force"
+        )
+        .run()
+        .unwrap();
+    }
+
+    let licenses_template = afs::crate_dir("xtask").join("licenses_template.hbs");
+    let dependencies_license_path = licenses_dir.join("dependencies.html");
     cmd!(
         sh,
-        "cargo install cargo-about --version 0.9.0 --locked --features cli"
+        "cargo about generate {licenses_template} --output-file {dependencies_license_path}"
     )
     .run()
     .unwrap();
-    let licenses_template = afs::crate_dir("xtask").join("licenses_template.hbs");
-    let licenses_content = cmd!(sh, "cargo about generate {licenses_template}")
-        .read()
-        .unwrap();
-    sh.write_file(licenses_dir.join("dependencies.html"), licenses_content)
-        .unwrap();
 }
 
 pub fn package_streamer(
