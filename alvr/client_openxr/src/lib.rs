@@ -126,6 +126,13 @@ fn create_session(
     xr::FrameWaiter,
     xr::FrameStream<xr::OpenGlEs>,
 ) {
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (xr_instance, xr_system, graphics_context);
+        unimplemented!()
+    }
+
+    #[cfg(target_os = "android")]
     unsafe {
         xr_instance
             .create_session(xr_system, &graphics::session_create_info(graphics_context))

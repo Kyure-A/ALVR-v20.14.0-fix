@@ -12,8 +12,6 @@ env:
 jobs:
   check-windows:
     runs-on: windows-latest
-    env:
-      LIBCLANG_PATH: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\x64\bin'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,6 +20,32 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
+      - name: Configure libclang
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $roots = @()
+          if (Test-Path $vswhere) {
+            $roots += & $vswhere -products * -property installationPath
+          }
+          $roots += Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio" -Directory -ErrorAction SilentlyContinue |
+            Get-ChildItem -Directory -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty FullName
+
+          $libclang = $roots |
+            ForEach-Object {
+              Join-Path $_ "VC\Tools\Llvm\x64\bin\libclang.dll"
+              Join-Path $_ "VC\Tools\Llvm\x64\bin\clang.dll"
+            } |
+            Where-Object { Test-Path $_ } |
+            Select-Object -First 1
+          if (!$libclang) {
+            throw "Unable to locate libclang.dll"
+          }
+
+          $libclangPath = Split-Path $libclang
+          "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
+          "$libclangPath" >> $env:GITHUB_PATH
 
       - name: Prepare deps
         env:
@@ -153,8 +177,6 @@ jobs:
 
   check-msrv-windows:
     runs-on: windows-latest
-    env:
-      LIBCLANG_PATH: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\x64\bin'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -164,6 +186,32 @@ jobs:
 
       # Fix actions rust install and msrv both being stupid
       - run: rustup update
+      - name: Configure libclang
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $roots = @()
+          if (Test-Path $vswhere) {
+            $roots += & $vswhere -products * -property installationPath
+          }
+          $roots += Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio" -Directory -ErrorAction SilentlyContinue |
+            Get-ChildItem -Directory -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty FullName
+
+          $libclang = $roots |
+            ForEach-Object {
+              Join-Path $_ "VC\Tools\Llvm\x64\bin\libclang.dll"
+              Join-Path $_ "VC\Tools\Llvm\x64\bin\clang.dll"
+            } |
+            Where-Object { Test-Path $_ } |
+            Select-Object -First 1
+          if (!$libclang) {
+            throw "Unable to locate libclang.dll"
+          }
+
+          $libclangPath = Split-Path $libclang
+          "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
+          "$libclangPath" >> $env:GITHUB_PATH
 
       - name: Prepare deps
         env:

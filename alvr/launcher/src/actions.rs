@@ -280,10 +280,11 @@ async fn install_server(
         tar::Archive::new(&mut GzDecoder::new(&mut buffer)).unpack(&installation_dir)?;
     }
 
-    if let Some(session_version) = session_version {
-        // This code is tailored for Windows and is only hit on Windows
-        assert!(cfg!(windows));
+    #[cfg(not(windows))]
+    let _ = session_version;
 
+    #[cfg(windows)]
+    if let Some(session_version) = session_version {
         for inst in get_installations() {
             if inst.version == session_version {
                 let source = alvr_filesystem::filesystem_layout_from_openvr_driver_root_dir(
