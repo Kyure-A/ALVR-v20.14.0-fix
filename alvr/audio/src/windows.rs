@@ -21,7 +21,9 @@ fn normalize_device_name(name: &str) -> String {
 }
 
 pub fn initialize_com() -> Result<()> {
-    unsafe { Com::CoInitializeEx(None, COINIT_MULTITHREADED)? };
+    if unsafe { Com::CoInitializeEx(None, COINIT_MULTITHREADED) }.is_err() {
+        bail!("Failed to initialize COM");
+    }
     Ok(())
 }
 
